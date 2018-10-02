@@ -7,37 +7,6 @@ from urllib.request import urlopen
 from bs4 import BeautifulSoup
 import re
 import time
-def get_data(date):
-    file = open('city_dict.json','r')
-    city_list=json.loads(file.read())
-    file.close()
-    data = pd.DataFrame([[0,0,0,0,0,0]],columns=['觀測時間(LST)ObsTime','氣溫(℃)Temperature','降水量(mm)Precp','降水時數(hr)PrecpHour','測站','地區'])
-    count = 0
-    for key,value in city_list.items():
-        count += 1
-        loc=urllib.parse.quote(value[0])#把文字轉換成 URL編碼
-        print(key,value[0],value[2],loc,count,str(date))
-        table = pd.read_html('https://e-service.cwb.gov.tw/HistoryDataQuery/DayDataController.do?command=viewMain&station='+key+'&stname='+loc+'&datepicker='+str(date),encoding='utf8')[1]
-        table.columns = table.iloc[1:2].values[0]
-        table = table.drop(index=[0,1]).reset_index(drop=True)
-        table = table[['觀測時間(LST)ObsTime','氣溫(℃)Temperature','降水量(mm)Precp','降水時數(hr)PrecpHour']]
-        for i in table.columns:
-            table[i] = pd.to_numeric(table[i], errors='coerce')#pd.to_numeric(list Series array tuple,errors=‘ignore’, ‘raise’, ‘coerce’) coerce如果轉換失敗就填NAN
-        table['測站'] = value[0]
-        table['地區'] = value[2]
-        data = data.append(table,ignore_index=True)
-    data=data.drop(index=0)
-    data['日期'] = data['觀測時間(LST)ObsTime'].map(lambda x: datetime.strptime(str(date)+' '+str(x-1),'%Y-%m-%d %H'))
-    return data
-def combine_everyday_data(date_list):
-    data = pd.DataFrame([[0,0,0,0,0,0,0]],columns=['觀測時間(LST)ObsTime','氣溫(℃)Temperature','降水量(mm)Precp','降水時數(hr)PrecpHour','測站','地區','日期'])
-    for day in date_list:
-        data_by_day = get_data(day)
-        data = data.append(data_by_day)
-        time.sleep(5)
-    data=data.drop(index=0)
-    data.to_csv('weather_data.csv',index=False)
-    return data
 def taobao_top_n(category,n=100):
     data = pd.DataFrame([[0,0,0,0,0,0,0,0,0,0,0]],columns=['category','title','raw_title','view_sales','comment_count','view_price','item_loc','nick','pic_url','detail_url','comment_url'])
     #設立一個空的dataframe 並給予first row 不然不能append or concat
@@ -57,5 +26,5 @@ def taobao_top_n(category,n=100):
         data = data.append(df)#不斷將新資料附加到data
     data.reset_index(drop=True,inplace=True)#重設索引 並刪除本來的索引 drop=True
     data = data.iloc[1:n+1]#刪除多餘的row
-    data.to_excel(str(category)+'.xlsx', index=False,encoding='utf8')     #寫入excel 工作表 xlsx檔
+    #data.to_excel(str(category)+'.xlsx', index=False,encoding='utf8')     #寫入excel 工作表 xlsx檔
     return data #回傳data表
